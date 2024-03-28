@@ -1,5 +1,5 @@
 # START STAGE 1
-FROM openjdk:8-jdk-slim as builder
+FROM --platform=$BUILDPLATFORM openjdk:8-jdk-slim as builder
 
 USER root
 
@@ -10,6 +10,7 @@ ENV ANT_HOME /etc/ant-${ANT_VERSION}
 
 WORKDIR /tmp
 
+ARG TARGETOS TARGETARCH
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -48,116 +49,45 @@ RUN mkdir /tmp/binary-xars
 RUN curl -L -o /tmp/binary-xars/00-templating-${TEMPLATING_VERSION}.xar http://exist-db.org/exist/apps/public-repo/public/templating-${TEMPLATING_VERSION}.xar
 RUN curl -L -o /tmp/binary-xars/00-tei-publisher-lib-${TEI_PUBLISHER_LIB_VERSION}.xar https://exist-db.org/exist/apps/public-repo/public/tei-publisher-lib-${TEI_PUBLISHER_LIB_VERSION}.xar
 RUN curl -L -o /tmp/binary-xars/00-expath-crypto-module-${EXPATH_CRYPTO_VERSION}.xar https://exist-db.org/exist/apps/public-repo/public/expath-crypto-module-${EXPATH_CRYPTO_VERSION}.xar
+RUN curl -L -o /tmp/binary-xars/00-shared-resources-0.9.1.xar https://exist-db.org/exist/apps/public-repo/public/shared-resources-0.9.1.xar
 # RUN curl -L -o /tmp/binary-xars/01-tei-pm-1.1.4.xar https://exist-db.org/exist/apps/public-repo/public/tei-pm-1.1.4.xar
+RUN curl -L -o /tmp/binary-xars/administrative-timeline-0.4.1.xar https://github.com/HistoryAtState/administrative-timeline/releases/download/v0.4.1/administrative-timeline-0.4.1.xar
+RUN curl -L -o /tmp/binary-xars/carousel-0.8.1.xar https://github.com/HistoryAtState/carousel/releases/download/v0.8.1/carousel-0.8.1.xar
+RUN curl -L -o /tmp/binary-xars/conferences-0.9.1.xar https://github.com/HistoryAtState/conferences/releases/download/v0.9.1/conferences-0.9.1.xar
+RUN curl -L -o /tmp/binary-xars/frus-0.5.3.xar https://github.com/HistoryAtState/frus/releases/download/v0.5.3/frus-0.5.3.xar
+RUN curl -L -o /tmp/binary-xars/frus-history-0.4.1.xar https://github.com/HistoryAtState/frus-history/releases/download/v0.4.1/frus-history-0.4.1.xar
+RUN curl -L -o /tmp/binary-xars/hac-1.0.2 https://github.com/HistoryAtState/hac/releases/download/v1.0.2/hac-1.0.2.xar
+RUN curl -L -o /tmp/binary-xars/hsg-shell-3.0.1.xar https://github.com/HistoryAtState/hsg-shell/releases/download/v3.0.1/hsg-shell-3.0.1.xar
+RUN curl -L -o /tmp/binary-xars/milestones-0.4.1.xar https://github.com/HistoryAtState/milestones/releases/download/v0.4.1/milestones-0.4.1.xar
+RUN curl -L -o /tmp/binary-xars/other-publications-0.4.1.xar https://github.com/HistoryAtState/other-publications/releases/download/v0.4.1/other-publications-0.4.1.xar
+RUN curl -L -o /tmp/binary-xars/pocom-0.5.1.xar https://github.com/HistoryAtState/pocom/releases/download/v0.5.1/pocom-0.5.1.xar
+RUN curl -L -o /tmp/binary-xars/rdcr-0.5.1.xar https://github.com/HistoryAtState/rdcr/releases/download/v0.5.1/rdcr-0.5.1.xar
+RUN curl -L -o /tmp/binary-xars/release-0.5.1.xar https://github.com/HistoryAtState/release/releases/download/0.5.1/release-0.5.1.xar
+RUN curl -L -o /tmp/binary-xars/tags-1.0.1.xar https://github.com/HistoryAtState/tags/releases/download/v1.0.1/tags-1.0.1.xar
+RUN curl -L -o /tmp/binary-xars/terms-0.4.1.xar https://github.com/HistoryAtState/terms/releases/download/v0.4.1/terms-0.4.1.xar
+RUN curl -L -o /tmp/binary-xars/travels-0.4.1.xar https://github.com/HistoryAtState/travels/releases/download/v0.4.1/travels-0.4.1.xar
+RUN curl -L -o /tmp/binary-xars/visits-0.4.1.xar https://github.com/HistoryAtState/visits/releases/download/v0.4.1/visits-0.4.1.xar
+RUN curl -L -o /tmp/binary-xars/wwdai-0.4.1.xar https://github.com/HistoryAtState/wwdai/releases/download/v0.4.1/wwdai-0.4.1.xar
+
 
 # Build XARs from source
-RUN git clone --depth 1 -b master https://github.com/HistoryAtState/administrative-timeline.git
-RUN cd administrative-timeline \
-    && ant xar
-
-RUN git clone --depth 1 -b master https://github.com/HistoryAtState/carousel.git
-RUN cd carousel \
-    && ant xar
-
-RUN git clone --depth 1 -b master https://github.com/HistoryAtState/conferences.git
-RUN cd conferences \
-    && ant xar
-
 RUN git clone --depth 1 -b master https://github.com/joewiz/gsh.git
 RUN cd gsh \
-     && ant xar
-
-RUN git clone --depth 1 -b master https://github.com/HistoryAtState/hac.git
-RUN cd hac \
-     && ant xar
-
-RUN git clone --depth 1 -b playground https://github.com/windauer/hsg-shell.git
-RUN cd hsg-shell \
-    && ant xar
-
-RUN  git clone --depth 1 -b master https://github.com/HistoryAtState/milestones.git
-RUN cd milestones \
-     && ant xar
-
-RUN git clone --depth 1 -b master https://github.com/HistoryAtState/other-publications.git 
-RUN cd other-publications \
-     && ant xar
-
-RUN git clone --depth 1 -b master https://github.com/HistoryAtState/pocom.git
-RUN cd pocom \
-     && ant xar
-
-RUN git clone --depth 1 -b master https://github.com/HistoryAtState/rdcr.git
-RUN cd rdcr \
-     && ant xar
-
-RUN git clone --depth 1 -b master https://github.com/HistoryAtState/release.git
-RUN cd release \
-     && ant xar
-
-RUN git clone --depth 1 -b master https://github.com/HistoryAtState/tags.git
-RUN cd tags \
-     && ant xar
-
-RUN git clone --depth 1 -b master https://github.com/HistoryAtState/terms.git
-RUN cd terms \
-     && ant xar
-
-RUN git clone --depth 1 -b master https://github.com/HistoryAtState/travels.git
-RUN cd travels \
-     && ant xar
-
-RUN git clone --depth 1 -b master https://github.com/HistoryAtState/twitter.git
-RUN cd twitter \
-     && ant xar
-
-RUN git clone --depth 1 -b master https://github.com/HistoryAtState/visits.git
-RUN cd visits \
-     && ant xar
-
-RUN git clone --depth 1 -b master https://github.com/HistoryAtState/wwdai.git
-RUN cd wwdai \
      && ant xar
 
 RUN git clone --depth 1 -b master https://github.com/joewiz/s3.git
 RUN cd s3 \
      && ant xar
 
-RUN  git clone --depth 1 -b master https://github.com/HistoryAtState/frus-history.git
-RUN cd frus-history \
-    && ant xar
-
-RUN  git clone --depth 1 -b master https://github.com/HistoryAtState/frus-not-yet-reviewed.git
-RUN cd frus-not-yet-reviewed \
-    && ant xar
-
-RUN  git clone --depth 1 -b master https://github.com/HistoryAtState/frus.git
-RUN cd frus \
-    && ant xar
+# frus-not-yet-reviewed.git does not build a xar 
+# RUN  git clone --depth 1 -b master https://github.com/HistoryAtState/frus-not-yet-reviewed.git
+# RUN cd frus-not-yet-reviewed \
+#    && ant xar
 
 FROM duncdrum/existdb:6.2.0-debug-j8
 COPY --from=hsg /tmp/binary-xars/*.xar /exist/autodeploy/
-COPY --from=hsg /tmp/administrative-timeline/build/*.xar /exist/autodeploy/
-COPY --from=hsg /tmp/carousel/build/*.xar /exist/autodeploy/
-COPY --from=hsg /tmp/conferences/build/*.xar /exist/autodeploy/
 COPY --from=hsg /tmp/gsh/build/*.xar /exist/autodeploy/
-COPY --from=hsg /tmp/hac/build/*.xar /exist/autodeploy/
-COPY --from=hsg /tmp/hsg-shell/build/*.xar /exist/autodeploy/
-COPY --from=hsg /tmp/milestones/build/*.xar /exist/autodeploy/
-COPY --from=hsg /tmp/other-publications/build/*.xar /exist/autodeploy/
-COPY --from=hsg /tmp/pocom/build/*.xar /exist/autodeploy/
-COPY --from=hsg /tmp/rdcr/build/*.xar /exist/autodeploy/
-COPY --from=hsg /tmp/release/build/*.xar /exist/autodeploy/
-COPY --from=hsg /tmp/tags/build/*.xar /exist/autodeploy/
-COPY --from=hsg /tmp/terms/build/*.xar /exist/autodeploy/
-COPY --from=hsg /tmp/travels/build/*.xar /exist/autodeploy/
-COPY --from=hsg /tmp/twitter/build/*.xar /exist/autodeploy/
-COPY --from=hsg /tmp/visits/build/*.xar /exist/autodeploy/
-COPY --from=hsg /tmp/wwdai/build/*.xar /exist/autodeploy/
 COPY --from=hsg /tmp/s3/build/*.xar /exist/autodeploy/
-COPY --from=hsg /tmp/frus-history/build/*.xar /exist/autodeploy/
-COPY --from=hsg /tmp/frus-not-yet-reviewed/build/*.xar /exist/autodeploy/
-COPY --from=hsg /tmp/frus/build/*.xar /exist/autodeploy/zz-frus.xar
 
 WORKDIR /exist
 
