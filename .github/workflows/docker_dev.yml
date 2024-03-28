@@ -86,7 +86,7 @@ jobs:
 
       # PUSH
       # Release
-      - name: Push :release to Dockerhub
+      - name: Push :latest to Dockerhub
         if: github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v5
         with:

@@ -20,7 +20,7 @@ ADD https://github.com/HistoryAtState/administrative-timeline/releases/download/
 ADD https://github.com/HistoryAtState/carousel/releases/download/v0.8.1/carousel-0.8.1.xar /exist/autodeploy/
 ADD https://github.com/HistoryAtState/conferences/releases/download/v0.9.1/conferences-0.9.1.xar /exist/autodeploy/
 ADD https://github.com/HistoryAtState/frus-history/releases/download/v0.4.1/frus-history-0.4.1.xar /exist/autodeploy/
-RUN https://github.com/HistoryAtState/hac/releases/download/v1.0.2/hac-1.0.2.xar /exist/autodeploy/
+ADD https://github.com/HistoryAtState/hac/releases/download/v1.0.2/hac-1.0.2.xar /exist/autodeploy/
 ADD https://github.com/HistoryAtState/hsg-shell/releases/download/v3.0.1/hsg-shell-3.0.1.xar /exist/autodeploy/
 ADD https://github.com/HistoryAtState/milestones/releases/download/v0.4.1/milestones-0.4.1.xar /exist/autodeploy/
 ADD https://github.com/HistoryAtState/other-publications/releases/download/v0.4.1/other-publications-0.4.1.xar /exist/autodeploy/
