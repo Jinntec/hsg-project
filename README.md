@@ -11,9 +11,9 @@ Docker repo for HSG project
 
 * Docker Hub: https://hub.docker.com/r/joewiz/hsg-project
 
-1. `docker buildx build --platform linux/amd64,linux/arm64 -t joewiz/hsg-project:master .`
-2. `docker push joewiz/hsg-project:master`
+1. `docker buildx build --platform linux/amd64,linux/arm64 -t joewiz/hsg-project:latest .`
+2. `docker push joewiz/hsg-project:latest`
 
 or in one command: 
 
-1. `docker buildx build . --platform linux/amd64,linux/arm64 -t joewiz/hsg-project:master --push`
+1. `docker buildx build . --platform linux/amd64,linux/arm64 -t joewiz/hsg-project:latest --push`
