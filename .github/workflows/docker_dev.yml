@@ -54,8 +54,16 @@ jobs:
           install: true
 
       - name: Install bats
-        # run: sudo apt-get install bats
         run: sudo apt-get install bats
+
+      #  sanity check
+      - name: check os
+        run: |
+          df -h /var/lib/docker
+          df -ih /var/lib/docker
+      
+      - name: Check config
+        run: docker info
 
       # BUILD
       - name: Build default images for testing on CI
@@ -75,14 +83,14 @@ jobs:
           docker run -dit -p 8080:8080 --name exist --rm ${{ env.TEST_TAG }}
       
       - name: wait for install to finish
-        timeout-minutes: 30
+        timeout-minutes: 45
         run: |
           while ! docker logs exist | grep -q "Server has started"; \
           do sleep 2s; \
           done 
 
       - name: Run tests
-        run: bats --tap test/bats/*.bats
+        run: bats --tap test/*.bats
 
       # PUSH
       # Release
