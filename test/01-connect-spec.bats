@@ -14,10 +14,10 @@
 }
 
 @test "container reports healthy to docker" {
-  result=$(docker ps | grep -c 'healthy')
-  [ "$result" -eq 2 ]
-  #   result=$(docker ps | grep -o 'healthy')
-  # [ "$result" == 'healthy' ]
+  # result=$(docker ps | grep -c 'healthy')
+  # [ "$result" -eq 1 ]
+    result=$(docker ps | grep -o 'healthy')
+  [ "$result" == 'healthy' ]
 }
 
 @test "logs show clean start" {
@@ -31,7 +31,7 @@
 }
 
 @test "no fatalities in logs" {
-  result=$(docker logs exist | grep -ow -c 'FATAL' || true)
+  result=$(docker logs exist-ci | grep -ow -c 'FATAL' || true)
   [ "$result" -eq 0 ]
 }
 

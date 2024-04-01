@@ -67,6 +67,7 @@ jobs:
 
       # BUILD
       - name: Build default images for testing on CI
+        timeout-minutes: 40
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -80,12 +81,12 @@ jobs:
       # TEST
       - name: Start exist-ci containers
         run: |
-          docker run -dit -p 8080:8080 --name exist --rm ${{ env.TEST_TAG }}
+          docker run -dit -p 8080:8080 --health-interval 4s --name exist-ci --rm ${{ env.TEST_TAG }}
       
       - name: wait for install to finish
-        timeout-minutes: 45
+        timeout-minutes: 5
         run: |
-          while ! docker logs exist | grep -q "Server has started"; \
+          while ! docker logs exist-ci | grep -q "Server has started"; \
           do sleep 2s; \
           done 
 
