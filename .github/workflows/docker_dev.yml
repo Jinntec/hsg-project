@@ -109,5 +109,5 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           push: true
           tags: joewiz/hsg-project:latest
-          cache-from: type=registry,ref=joewiz/hsg-project:buildcache
-          cache-to: type=registry,ref=joewiz/hsg-project:buildcache,mode=max 
+          cache-from: type=gha
+          cache-to: type=gha,mode=max 
