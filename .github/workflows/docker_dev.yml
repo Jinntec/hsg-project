@@ -66,24 +66,43 @@ jobs:
         run: docker info
 
       # BUILD
-      - name: Build default images for testing on CI
+      # see https://github.com/felipecrs/docker-images/commit/f74a9532da6549d9562574eb1709ef50cedb640c
+      - name: Build amd image for testing on CI
         timeout-minutes: 40
         uses: docker/build-push-action@v5
         with:
           context: .
+          platforms: linux/amd64
           build-args: |
             TEMPLATING_VERSION=1.1.0
             TEI_PUBLISHER_LIB_VERSION=2.10.1
             EXPATH_CRYPTO_VERSION=6.0.1
           load: true
           tags: ${{ env.TEST_TAG }}
+          cache-from: type=registry,ref=joewiz/hsg-project:buildcache-x86
+          cache-to: type=registry,ref=joewiz/hsg-project:buildcache-x86,mode=max
+
+      - name: Build arm image to populate cache
+        timeout-minutes: 180
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/arm64
+          build-args: |
+            TEMPLATING_VERSION=1.1.0
+            TEI_PUBLISHER_LIB_VERSION=2.10.1
+            EXPATH_CRYPTO_VERSION=6.0.1
+          load: true
+          tags: hsg-project:arm
+          cache-from: type=registry,ref=joewiz/hsg-project:buildcache-arm
+          cache-to: type=registry,ref=joewiz/hsg-project:buildcache-arm,mode=max
 
       # TEST
       - name: Start exist-ci containers
         run: |
           docker run -dit -p 8080:8080 --health-interval 4s --name exist-ci --rm ${{ env.TEST_TAG }}
       
-      - name: wait for install to finish
+      - name: wait for boot to finish
         timeout-minutes: 5
         run: |
           while ! docker logs exist-ci | grep -q "Server has started"; \
@@ -109,5 +128,6 @@ jobs:
           builder: ${{ steps.buildx.outputs.name }}
           push: true
           tags: joewiz/hsg-project:latest
-          cache-from: type=registry,ref=joewiz/hsg-project:buildcache
-          cache-to: type=registry,ref=joewiz/hsg-project:buildcache,mode=max 
+          cache-from: |
+            type=registry,ref=joewiz/hsg-project:buildcache-x86
+            type=registry,ref=joewiz/hsg-project:buildcache-arm
