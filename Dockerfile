@@ -13,8 +13,8 @@ ADD --link https://exist-db.org/exist/apps/public-repo/public/tei-publisher-lib-
 
 
 # Copy HSH Deps should be sorted in ascending order according to update frequency
-ADD --link https://github.com/joewiz/gsh/releases/download/latest/gsh.xar  /exist/autodeploy/
-ADD --link https://github.com/HistoryAtState/aws.xq/releases/download/latest/aws-xq.xar /exist/autodeploy/
+ADD --link https://github.com/joewiz/gsh/releases/latest/download/gsh.xar /exist/autodeploy/
+ADD --link https://github.com/HistoryAtState/aws.xq/releases/latest/download/aws-xq.xar /exist/autodeploy/
 # TODO determine the requirment for above two project xars
 ADD --link https://github.com/HistoryAtState/administrative-timeline/releases/latest/download/administrative-timeline.xar  /exist/autodeploy/
 ADD --link https://github.com/HistoryAtState/carousel/releases/latest/download/carousel.xar /exist/autodeploy/
