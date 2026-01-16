@@ -1,4 +1,4 @@
-FROM duncdrum/existdb:6.2.0
+FROM duncdrum/existdb:6.4.0
 
 # Dependency Versions
 ARG TEMPLATING_VERSION=1.1.0
