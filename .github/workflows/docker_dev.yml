@@ -22,11 +22,44 @@ jobs:
         uses: easimon/maximize-build-space@master
         with:
           build-mount-path: /var/lib/docker/
+          root-reserve-mb: 2048
+          temp-reserve-mb: 512
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
           remove-codeql: 'true'
           remove-docker-images: 'true'
+
+      # Root/temp have minimal free space after LVM. Containerd (used by
+      # "load: true") writes to /var/lib/containerd on root and runs out of space.
+      # Redirect containerd root to the 102GB Docker volume.
+      - name: Configure containerd to use Docker volume
+        run: |
+          sudo mkdir -p /etc/containerd /var/lib/docker/containerd
+          if sudo containerd config default > /tmp/containerd.toml 2>/dev/null; then
+            sudo sed -i 's|root = .*|root = "/var/lib/docker/containerd"|' /tmp/containerd.toml
+            grep -q 'root = ' /tmp/containerd.toml || echo 'root = "/var/lib/docker/containerd"' | sudo tee -a /tmp/containerd.toml
+          else
+            printf 'version = 2\nroot = "/var/lib/docker/containerd"\n' | sudo tee /tmp/containerd.toml
+          fi
+          sudo mv /tmp/containerd.toml /etc/containerd/config.toml
+          sudo systemctl restart containerd 2>/dev/null || true
+
+      # Limit container logs to prevent filling disk (buildkit, exist-ci during tests)
+      - name: Configure Docker log limits
+        run: |
+          sudo mkdir -p /etc/docker
+          if [ -s /etc/docker/daemon.json ]; then
+            sudo python3 -c "
+          import json
+          with open('/etc/docker/daemon.json') as f: c=json.load(f)
+          c.setdefault('log-opts',{})['max-size']='10m'
+          c['log-opts']['max-file']='3'
+          with open('/etc/docker/daemon.json','w') as f: json.dump(c,f,indent=2)
+          "
+          else
+            echo '{"log-driver":"json-file","log-opts":{"max-size":"10m","max-file":"3"}}' | sudo tee /etc/docker/daemon.json
+          fi
 
       - name: Restart docker
         run: sudo service docker restart
@@ -50,6 +83,10 @@ jobs:
       - name: Make buildkit default
         uses: docker/setup-buildx-action@v3
         id: buildx
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
 
       - name: Install bats
         run: sudo apt-get install bats
@@ -115,7 +152,7 @@ jobs:
         if: failure()
         run: |
           echo "=== Disk space after failed build ==="
-          df -h /var/lib/docker
+          df -h / /var/lib/docker /var/lib/containerd 2>/dev/null || df -h
           df -ih /var/lib/docker
           echo "=== Docker system df ==="
           docker system df
