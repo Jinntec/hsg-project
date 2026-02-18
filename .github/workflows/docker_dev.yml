@@ -67,6 +67,8 @@ jobs:
       # see https://github.com/felipecrs/docker-images/commit/f74a9532da6549d9562574eb1709ef50cedb640c
       - name: Build amd image for testing on CI
         timeout-minutes: 60
+        env:
+          BUILDKIT_PROGRESS: plain
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -90,7 +92,6 @@ jobs:
             TEMPLATING_VERSION=1.1.0
             TEI_PUBLISHER_LIB_VERSION=2.10.1
             EXPATH_CRYPTO_VERSION=6.0.1
-          load: true
           tags: hsg-project:arm
           cache-from: type=registry,ref=joewiz/hsg-project:buildcache-arm
           cache-to: type=registry,ref=joewiz/hsg-project:buildcache-arm,mode=max
@@ -109,6 +110,21 @@ jobs:
 
       - name: Run tests
         run: bats --tap test/*.bats
+
+      - name: Check disk space on failure
+        if: failure()
+        run: |
+          echo "=== Disk space after failed build ==="
+          df -h /var/lib/docker
+          df -ih /var/lib/docker
+          echo "=== Docker system df ==="
+          docker system df
+          echo "=== Containerd content ==="
+          du -sh /var/lib/containerd/io.containerd.content.v1.content/ || echo "Not found"
+          echo "=== Docker overlay2 ==="
+          du -sh /var/lib/docker/overlay2/ || echo "Not found"
+          echo "=== Buildkit state ==="
+          du -sh /var/lib/docker/buildx/ || echo "Not found"
 
       # PUSH
       # Release
