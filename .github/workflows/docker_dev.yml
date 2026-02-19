@@ -7,62 +7,31 @@ on:
 
 env:
   TEST_TAG: joewiz/hsg-project:exist-ci
-  # EXIST_VER: 6.2.0
 
 jobs:
   build:
-    name: Build and Test Images
+    name: Build ${{ matrix.platform }}
     runs-on: ubuntu-latest
-    # NOTE (DP): Test on PRs and pushes
     if: github.ref == 'refs/heads/main' || github.base_ref ==  'main'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            cache_suffix: x86
+            tag: joewiz/hsg-project:exist-ci
+            load: true
+            run_tests: true
+          - platform: linux/arm64
+            cache_suffix: arm
+            tag: hsg-project:arm
+            load: false
+            run_tests: false
+
     steps:
-    
     # SETUP
-      - name: Maximize build space
-        uses: easimon/maximize-build-space@master
-        with:
-          build-mount-path: /var/lib/docker/
-          root-reserve-mb: 2048
-          temp-reserve-mb: 512
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
-
-      # Root/temp have minimal free space after LVM. Containerd (used by
-      # "load: true") writes to /var/lib/containerd on root and runs out of space.
-      # Redirect containerd root to the 102GB Docker volume.
-      - name: Configure containerd to use Docker volume
-        run: |
-          sudo mkdir -p /etc/containerd /var/lib/docker/containerd
-          if sudo containerd config default > /tmp/containerd.toml 2>/dev/null; then
-            sudo sed -i 's|root = .*|root = "/var/lib/docker/containerd"|' /tmp/containerd.toml
-            grep -q 'root = ' /tmp/containerd.toml || echo 'root = "/var/lib/docker/containerd"' | sudo tee -a /tmp/containerd.toml
-          else
-            printf 'version = 2\nroot = "/var/lib/docker/containerd"\n' | sudo tee /tmp/containerd.toml
-          fi
-          sudo mv /tmp/containerd.toml /etc/containerd/config.toml
-          sudo systemctl restart containerd 2>/dev/null || true
-
-      # Limit container logs to prevent filling disk (buildkit, exist-ci during tests)
-      - name: Configure Docker log limits
-        run: |
-          sudo mkdir -p /etc/docker
-          if [ -s /etc/docker/daemon.json ]; then
-            sudo python3 -c "
-          import json
-          with open('/etc/docker/daemon.json') as f: c=json.load(f)
-          c.setdefault('log-opts',{})['max-size']='10m'
-          c['log-opts']['max-file']='3'
-          with open('/etc/docker/daemon.json','w') as f: json.dump(c,f,indent=2)
-          "
-          else
-            echo '{"log-driver":"json-file","log-opts":{"max-size":"10m","max-file":"3"}}' | sudo tee /etc/docker/daemon.json
-          fi
-
-      - name: Restart docker
-        run: sudo service docker restart
+      - name: Setup Docker build environment
+        uses: ./.github/actions/setup-docker-build
 
       - uses: actions/checkout@v6
         with:
@@ -71,8 +40,7 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
-          platforms: linux/amd64,linux/arm64 
-          # platforms: all
+          platforms: linux/amd64,linux/arm64
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -89,56 +57,51 @@ jobs:
             network=host
 
       - name: Install bats
+        if: matrix.run_tests
         run: sudo apt-get install bats
 
-      #  sanity check
-      - name: check os
-        run: |
-          df -h /var/lib/docker
-          df -ih /var/lib/docker
-      
-      - name: Check config
-        run: docker info
-
       # BUILD
-      # see https://github.com/felipecrs/docker-images/commit/f74a9532da6549d9562574eb1709ef50cedb640c
-      - name: Build amd image for testing on CI
+      - name: Build ${{ matrix.platform }} image
         timeout-minutes: 60
+        if: matrix.platform == 'linux/amd64'
         env:
           BUILDKIT_PROGRESS: plain
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64
+          platforms: ${{ matrix.platform }}
           build-args: |
             TEMPLATING_VERSION=1.1.0
             TEI_PUBLISHER_LIB_VERSION=2.10.1
             EXPATH_CRYPTO_VERSION=6.0.1
           load: true
-          tags: ${{ env.TEST_TAG }}
-          cache-from: type=registry,ref=joewiz/hsg-project:buildcache-x86
-          cache-to: type=registry,ref=joewiz/hsg-project:buildcache-x86,mode=max
+          tags: ${{ matrix.tag }}
+          cache-from: type=registry,ref=joewiz/hsg-project:buildcache-${{ matrix.cache_suffix }}
+          cache-to: type=registry,ref=joewiz/hsg-project:buildcache-${{ matrix.cache_suffix }},mode=max
 
-      - name: Build arm image to populate cache
+      - name: Build ${{ matrix.platform }} image
         timeout-minutes: 240
+        if: matrix.platform == 'linux/arm64'
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/arm64
+          platforms: ${{ matrix.platform }}
           build-args: |
             TEMPLATING_VERSION=1.1.0
             TEI_PUBLISHER_LIB_VERSION=2.10.1
             EXPATH_CRYPTO_VERSION=6.0.1
-          tags: hsg-project:arm
-          cache-from: type=registry,ref=joewiz/hsg-project:buildcache-arm
-          cache-to: type=registry,ref=joewiz/hsg-project:buildcache-arm,mode=max
+          tags: ${{ matrix.tag }}
+          cache-from: type=registry,ref=joewiz/hsg-project:buildcache-${{ matrix.cache_suffix }}
+          cache-to: type=registry,ref=joewiz/hsg-project:buildcache-${{ matrix.cache_suffix }},mode=max
 
-      # TEST
+      # TEST (amd64 only)
       - name: Start exist-ci containers
+        if: matrix.run_tests
         run: |
           docker run -dit -p 8080:8080 --health-interval 4s --name exist-ci --rm ${{ env.TEST_TAG }}
-      
+
       - name: wait for boot to finish
+        if: matrix.run_tests
         timeout-minutes: 5
         run: |
           while ! docker logs exist-ci | grep -q "Server has started"; \
@@ -146,6 +109,7 @@ jobs:
           done 
 
       - name: Run tests
+        if: matrix.run_tests
         run: bats --tap test/*.bats
 
       - name: Check disk space on failure
@@ -156,22 +120,45 @@ jobs:
           df -ih /var/lib/docker
           echo "=== Docker system df ==="
           docker system df
-          echo "=== Containerd content ==="
-          du -sh /var/lib/containerd/io.containerd.content.v1.content/ || echo "Not found"
-          echo "=== Docker overlay2 ==="
-          du -sh /var/lib/docker/overlay2/ || echo "Not found"
-          echo "=== Buildkit state ==="
-          du -sh /var/lib/docker/buildx/ || echo "Not found"
 
-      # PUSH
-      # Release
-      - name: Push :latest to Dockerhub
-        if: github.ref == 'refs/heads/main'
+  # PUSH (main only, after both platform builds complete)
+  push:
+    name: Push :latest to Dockerhub
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Setup Docker build environment
+        uses: ./.github/actions/setup-docker-build
+
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/amd64,linux/arm64
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        id: buildx
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
+
+      - name: Build and push multi-platform image
         uses: docker/build-push-action@v6
         with:
-          context: ./
+          context: .
           platforms: linux/amd64,linux/arm64
-          file: ./Dockerfile
           build-args: |
             TEMPLATING_VERSION=1.1.0
             TEI_PUBLISHER_LIB_VERSION=2.10.1
