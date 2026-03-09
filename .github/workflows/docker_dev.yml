@@ -106,7 +106,7 @@ jobs:
         timeout-minutes: 60
         env:
           BUILDKIT_PROGRESS: plain
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64
@@ -121,7 +121,7 @@ jobs:
 
       - name: Build arm image to populate cache
         timeout-minutes: 240
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/arm64
@@ -167,7 +167,7 @@ jobs:
       # Release
       - name: Push :latest to Dockerhub
         if: github.ref == 'refs/heads/main'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ./
           platforms: linux/amd64,linux/arm64
