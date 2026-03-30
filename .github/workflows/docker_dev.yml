@@ -1,8 +1,8 @@
 name: Docker Dev containers for HSG
-on: 
+on:
   push:
   pull_request:
-  schedule: 
+  schedule:
       - cron: "0 0/12 * * *"
 
 env:
@@ -16,7 +16,7 @@ jobs:
     # NOTE (DP): Test on PRs and pushes
     if: github.ref == 'refs/heads/main' || github.base_ref ==  'main'
     steps:
-    
+
     # SETUP
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
@@ -71,7 +71,7 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
         with:
-          platforms: linux/amd64,linux/arm64 
+          platforms: linux/amd64,linux/arm64
           # platforms: all
 
       - name: Login to Docker Hub
@@ -96,7 +96,7 @@ jobs:
         run: |
           df -h /var/lib/docker
           df -ih /var/lib/docker
-      
+
       - name: Check config
         run: docker info
 
@@ -137,13 +137,14 @@ jobs:
       - name: Start exist-ci containers
         run: |
           docker run -dit -p 8080:8080 --health-interval 4s --name exist-ci --rm ${{ env.TEST_TAG }}
-      
+
       - name: wait for boot to finish
         timeout-minutes: 5
         run: |
           while ! docker logs exist-ci | grep -q "Server has started"; \
           do sleep 2s; \
-          done 
+          done
+          sleep 12s
 
       - name: Run tests
         run: bats --tap test/*.bats
@@ -162,6 +163,26 @@ jobs:
           du -sh /var/lib/docker/overlay2/ || echo "Not found"
           echo "=== Buildkit state ==="
           du -sh /var/lib/docker/buildx/ || echo "Not found"
+
+      - name: debug logs
+        if: failure()
+        run: docker logs exist-ci | grep 'ERROR'
+
+      - name: Copy logs on failure
+        if: failure()
+        run: |
+          echo "Copying logs..."
+          docker cp exist-ci:/exist/logs/exist.log ./exist.log
+
+      - name: Upload logs artifact
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: hsg-project-failed-log
+          path: exist.log
+
+      - name: Stop exist-ci container
+        run: docker stop exist-ci
 
       # PUSH
       # Release
