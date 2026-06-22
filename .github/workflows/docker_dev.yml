@@ -64,7 +64,7 @@ jobs:
       - name: Restart docker
         run: sudo service docker restart
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 1
 
