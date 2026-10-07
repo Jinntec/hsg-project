@@ -1,9 +1,11 @@
 name: Docker Dev containers for HSG
 on:
   push:
+    branches: [main]
   pull_request:
   schedule:
       - cron: "0 0/12 * * *"
+  workflow_dispatch:
 
 env:
   TEST_TAG: joewiz/hsg-project:exist-ci
