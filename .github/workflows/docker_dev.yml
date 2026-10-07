@@ -201,7 +201,9 @@ jobs:
             EXPATH_CRYPTO_VERSION=6.0.1
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          tags: joewiz/hsg-project:latest
+          tags: |
+              joewiz/hsg-project:latest
+              joewiz/hsg-project:v1
           cache-from: |
             type=registry,ref=joewiz/hsg-project:buildcache-x86
             type=registry,ref=joewiz/hsg-project:buildcache-arm
