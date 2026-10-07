@@ -1,0 +1,16 @@
+.github/workflows/docker_dev.yml
+  h_ff0005bef58c9d 204-206
+Dockerfile
+  h_ff0005bef58c9d 1,38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d9753eb49ff25da34d6bb1f6f27640714e22837b",
+  "prompts": {},
+  "humans": {
+    "h_ff0005bef58c9d": {
+      "author": "duncdrum <d.paterson@me.com>"
+    }
+  }
+}
