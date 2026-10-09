@@ -1,0 +1,19 @@
+.dockerignore
+  s_8165a30b4e647f::t_e27b8f2304e70a 1-3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e3c10a2c44ab423fb026b39fd681d70595c2db1c",
+  "prompts": {},
+  "sessions": {
+    "s_8165a30b4e647f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "164ac331-a6ae-4606-b59c-1520155a9936",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "duncdrum <d.paterson@me.com>"
+    }
+  }
+}
