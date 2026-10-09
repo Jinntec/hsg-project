@@ -1,0 +1,30 @@
+.github/workflows/docker_dev.yml
+  s_8165a30b4e647f::t_8362428f3a7b31 118-119,134-135,203-204,209
+  s_8165a30b4e647f::t_09258562db535d 116-117
+  s_8165a30b4e647f::t_859674b449e38c 132-133
+  s_8165a30b4e647f::t_7d7d0ccea4ac6e 201-202
+Dockerfile
+  s_8165a30b4e647f::t_8398c59eeff91d 74-78
+  s_8165a30b4e647f::t_c987620ad45b69 94
+  s_8165a30b4e647f::t_c18f5ea1025541 81,83-89
+  s_8165a30b4e647f::t_74498507974ff8 71-73
+  s_8165a30b4e647f::t_9e05f8043a47c4 79-80
+  s_8165a30b4e647f::t_5b48d33ffb7af6 82
+  s_8165a30b4e647f::t_22f1537e5ea53f 90-93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bf737fa1cc77b87f2fba74aad1a6d95dde5c9d36",
+  "prompts": {},
+  "sessions": {
+    "s_8165a30b4e647f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "164ac331-a6ae-4606-b59c-1520155a9936",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "duncdrum <d.paterson@me.com>"
+    }
+  }
+}
