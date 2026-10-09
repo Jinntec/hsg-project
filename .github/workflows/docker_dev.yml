@@ -113,9 +113,10 @@ jobs:
           context: .
           platforms: linux/amd64
           build-args: |
-            TEMPLATING_VERSION=1.1.0
-            TEI_PUBLISHER_LIB_VERSION=2.10.1
-            EXPATH_CRYPTO_VERSION=6.0.1
+            PUBLISHER_LIB_VERSION=6.1.2
+            CRYPTO_VERSION=7.0.0
+          secrets: |
+            GIT_AUTH_TOKEN=${{ secrets.HSG_READ_TOKEN }}
           load: true
           tags: ${{ env.TEST_TAG }}
           cache-from: type=registry,ref=joewiz/hsg-project:buildcache-x86
@@ -128,9 +129,10 @@ jobs:
           context: .
           platforms: linux/arm64
           build-args: |
-            TEMPLATING_VERSION=1.1.0
-            TEI_PUBLISHER_LIB_VERSION=2.10.1
-            EXPATH_CRYPTO_VERSION=6.0.1
+            PUBLISHER_LIB_VERSION=6.1.2
+            CRYPTO_VERSION=7.0.0
+          secrets: |
+            GIT_AUTH_TOKEN=${{ secrets.HSG_READ_TOKEN }}
           tags: hsg-project:arm
           cache-from: type=registry,ref=joewiz/hsg-project:buildcache-arm
           cache-to: type=registry,ref=joewiz/hsg-project:buildcache-arm,mode=max
@@ -196,14 +198,15 @@ jobs:
           platforms: linux/amd64,linux/arm64
           file: ./Dockerfile
           build-args: |
-            TEMPLATING_VERSION=1.1.0
-            TEI_PUBLISHER_LIB_VERSION=2.10.1
-            EXPATH_CRYPTO_VERSION=6.0.1
+            PUBLISHER_LIB_VERSION=6.1.2
+            CRYPTO_VERSION=7.0.0
+          secrets: |
+            GIT_AUTH_TOKEN=${{ secrets.HSG_READ_TOKEN }}
           builder: ${{ steps.buildx.outputs.name }}
           push: true
           tags: |
               joewiz/hsg-project:latest
-              joewiz/hsg-project:v1
+              joewiz/hsg-project:v2
           cache-from: |
             type=registry,ref=joewiz/hsg-project:buildcache-x86
             type=registry,ref=joewiz/hsg-project:buildcache-arm
