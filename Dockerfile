@@ -80,7 +80,7 @@ RUN set -e; i=5; \
 
 # Private repos (need --secret id=GIT_AUTH_TOKEN at build time)
 # back to master or release artifacts after HistoryAtState/hsg-jinks#74 is merged
-ADD --link ${HSG_GIT}/hsg-jinks.git#feat/semantic-search-mvp hsg-jinks/
+ADD --link ${HSG_GIT}/hsg-jinks.git hsg-jinks/
 RUN cd hsg-jinks && ant xar \
     && cp build/*.xar /tmp/deps/015-hsg-jinks.xar
 
