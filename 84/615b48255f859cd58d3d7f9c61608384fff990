@@ -1,0 +1,19 @@
+Dockerfile
+  s_ff8baa67d5f459::t_61372f7f273cc8 1,95-96,100-108
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "84615b48255f859cd58d3d7f9c61608384fff990",
+  "prompts": {},
+  "sessions": {
+    "s_ff8baa67d5f459": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8e0e6356-c6bb-4a03-ba03-3d477ee0d489",
+        "model": "composer-2.5-fast"
+      },
+      "human_author": "duncdrum <d.paterson@me.com>"
+    }
+  }
+}
