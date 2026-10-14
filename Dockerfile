@@ -85,7 +85,7 @@ RUN cd hsg-jinks && ant xar \
     && cp build/*.xar /tmp/deps/015-hsg-jinks.xar
 
 # ant xar-full for when things are more stable
-ADD --link ${HSG_GIT}/hsg-jinks-data.git#${VEC_REF} hsg-jinks-data/
+ADD --link ${HSG_GIT}/hsg-jinks-data.git hsg-jinks-data/
 RUN cd hsg-jinks-data && ant xar \
     && cp build/*.xar /tmp/deps/016-hsg-jinks-data.xar
 
