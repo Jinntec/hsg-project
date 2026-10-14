@@ -1,0 +1,19 @@
+Dockerfile
+  s_dc7b1e6210c86b::t_dded9f7defb7bf 14-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "af1b0c8c5fce8f16fe55bbfda1646e91913a17d7",
+  "prompts": {},
+  "sessions": {
+    "s_dc7b1e6210c86b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a8566efb-72fe-407b-93ce-e8f46959ea45",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "duncdrum <d.paterson@me.com>"
+    }
+  }
+}
