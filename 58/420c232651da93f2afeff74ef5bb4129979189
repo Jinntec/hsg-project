@@ -1,0 +1,19 @@
+.github/workflows/docker_dev.yml
+  s_dc7b1e6210c86b::t_47695365f9e0f0 10-14,16,21-23,25-38,43,59,71-77,121-122,130,137,145-146,193,200-202,204,207-208,216-267
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "58420c232651da93f2afeff74ef5bb4129979189",
+  "prompts": {},
+  "sessions": {
+    "s_dc7b1e6210c86b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a8566efb-72fe-407b-93ce-e8f46959ea45",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "duncdrum <d.paterson@me.com>"
+    }
+  }
+}
