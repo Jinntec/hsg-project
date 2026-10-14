@@ -11,7 +11,9 @@ ARG JINKS_TEMPLATES_VERSION=1.4.2
 ARG CRYPTO_VERSION=7.0.0
 ARG JWT_VERSION=2.0.2
 
-FROM ${BUILDER_IMAGE} AS build
+# xars are architecture-independent: build them once on the host platform
+# instead of repeating `ant xar` under QEMU for every target platform
+FROM --platform=$BUILDPLATFORM ${BUILDER_IMAGE} AS build
 
 # URL
 ARG PUBLIC_REPO=https://exist-db.org/exist/apps/public-repo/public
