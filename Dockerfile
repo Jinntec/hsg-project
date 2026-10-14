@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Images
 ARG EXISTDB_VERSION=experimental
 ARG BUILDER_IMAGE=ghcr.io/eeditiones/builder:latest
@@ -91,8 +92,17 @@ ADD --link ${HSG_GIT}/hsg-jinks-data.git hsg-jinks-data/
 RUN cd hsg-jinks-data && ant xar \
     && cp build/*.xar /tmp/deps/016-hsg-jinks-data.xar
 
+# pre-populate the database by launching it once
+FROM duncdrum/existdb:${EXISTDB_VERSION} AS populate
+
+COPY --from=build /tmp/deps/*.xar /exist/autodeploy/
+RUN [ "java", "org.exist.start.Main", "client", "--no-gui",  "-l", "-u", "admin", "-P", "", "-x", "system:get-version()" ]
+
 FROM duncdrum/existdb:${EXISTDB_VERSION}
 
 COPY --from=build /tmp/deps/*.xar /exist/autodeploy/
-# pre-populate the database by launching it once
-RUN [ "java", "org.exist.start.Main", "client", "--no-gui",  "-l", "-u", "admin", "-P", "", "-x", "system:get-version()" ]
+# Only the populated data is carried over. Lucene's NativeFSLock compares the
+# creation time of write.lock; a stale lock from an image layer is copied up by
+# overlayfs at runtime, the time changes, and eXist fails to boot with an
+# AlreadyClosedException. Lucene recreates the locks on first start.
+COPY --from=populate --exclude=**/write.lock /exist/data /exist/data
