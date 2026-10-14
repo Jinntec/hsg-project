@@ -1,0 +1,3 @@
+# Nothing is COPYed from the build context (only `COPY --from=build`),
+# so send none of it. Whitelist with `!path` if that ever changes.
+*
