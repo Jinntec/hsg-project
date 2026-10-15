@@ -125,23 +125,28 @@ jobs:
       - name: Check config
         run: docker info
 
+      - name: Image metadata
+        id: meta
+        run: echo "created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
       # BUILD
       # see https://github.com/felipecrs/docker-images/commit/f74a9532da6549d9562574eb1709ef50cedb640c
       - name: Build image for testing on CI
-        timeout-minutes: 60
+        # timeout-minutes: 240
         env:
           BUILDKIT_PROGRESS: plain
         uses: docker/build-push-action@v7
         with:
           context: .
           platforms: ${{ matrix.platform }}
-          build-args: |
-            PUBLISHER_LIB_VERSION=6.1.2
-            CRYPTO_VERSION=7.0.0
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.HSG_READ_TOKEN }}
           load: true
           tags: ${{ env.TEST_TAG }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.created }}
+            org.opencontainers.image.version=${{ github.ref_name }}
           cache-from: type=registry,ref=${{ env.IMAGE }}:${{ matrix.cache }}
           cache-to: type=registry,ref=${{ env.IMAGE }}:${{ matrix.cache }},mode=max
 
@@ -207,13 +212,14 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           file: ./Dockerfile
-          build-args: |
-            PUBLISHER_LIB_VERSION=6.1.2
-            CRYPTO_VERSION=7.0.0
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.HSG_READ_TOKEN }}
           builder: ${{ steps.buildx.outputs.name }}
           outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.created }}
+            org.opencontainers.image.version=${{ github.ref_name }}
           cache-from: type=registry,ref=${{ env.IMAGE }}:${{ matrix.cache }}
 
       - name: Export digest

@@ -89,7 +89,7 @@ RUN cd hsg-jinks && ant xar \
 
 # ant xar-full for when things are more stable
 ADD --link ${HSG_GIT}/hsg-jinks-data.git hsg-jinks-data/
-RUN cd hsg-jinks-data && ant xar \
+RUN cd hsg-jinks-data && ant xar-full \
     && cp build/*.xar /tmp/deps/016-hsg-jinks-data.xar
 
 # pre-populate the database by launching it once
@@ -106,3 +106,17 @@ COPY --from=build /tmp/deps/*.xar /exist/autodeploy/
 # overlayfs at runtime, the time changes, and eXist fails to boot with an
 # AlreadyClosedException. Lucene recreates the locks on first start.
 COPY --from=populate --exclude=**/write.lock /exist/data /exist/data
+
+# The labels inherited from the base image (title, source, version, created)
+# describe distroless-exist, not this image. revision, created and version are
+# set at build time by the workflow.
+LABEL org.opencontainers.image.title="hsg-project" \
+      org.opencontainers.image.description="eXist-db pre-populated with the History at State (HSG) packages" \
+      org.opencontainers.image.source="https://github.com/Jinntec/hsg-project" \
+      org.opencontainers.image.url="https://github.com/Jinntec/hsg-project"
+
+# Same probe as the base image. Without --interval docker waits 30s before the
+# first result, although the server is up within seconds from the pre-populated
+# data. Exec form only, so it also works without a shell or curl.
+HEALTHCHECK --interval=10s --timeout=30s --start-period=60s --retries=3 \
+    CMD ["java", "org.exist.start.Main", "client", "--no-gui", "--user", "guest", "--password", "guest", "--xpath", "system:get-version()"]
