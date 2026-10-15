@@ -89,7 +89,7 @@ RUN cd hsg-jinks && ant xar \
 
 # ant xar-full for when things are more stable
 ADD --link ${HSG_GIT}/hsg-jinks-data.git hsg-jinks-data/
-RUN cd hsg-jinks-data && ant xar \
+RUN cd hsg-jinks-data && ant xar-full \
     && cp build/*.xar /tmp/deps/016-hsg-jinks-data.xar
 
 # pre-populate the database by launching it once

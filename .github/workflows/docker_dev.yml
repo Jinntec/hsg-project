@@ -132,16 +132,13 @@ jobs:
       # BUILD
       # see https://github.com/felipecrs/docker-images/commit/f74a9532da6549d9562574eb1709ef50cedb640c
       - name: Build image for testing on CI
-        timeout-minutes: 60
+        # timeout-minutes: 240
         env:
           BUILDKIT_PROGRESS: plain
         uses: docker/build-push-action@v7
         with:
           context: .
           platforms: ${{ matrix.platform }}
-          build-args: |
-            PUBLISHER_LIB_VERSION=6.1.2
-            CRYPTO_VERSION=7.0.0
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.HSG_READ_TOKEN }}
           load: true
@@ -215,9 +212,6 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           file: ./Dockerfile
-          build-args: |
-            PUBLISHER_LIB_VERSION=6.1.2
-            CRYPTO_VERSION=7.0.0
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.HSG_READ_TOKEN }}
           builder: ${{ steps.buildx.outputs.name }}
