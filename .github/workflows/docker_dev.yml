@@ -7,10 +7,13 @@ on:
       - cron: "0 0/12 * * *"
   workflow_dispatch:
 
-# Superseded PR runs are cancelled, main/schedule runs are never cancelled
+# A newer push to the same ref cancels the run it supersedes (PRs and main),
+# so a 3+ hour build is not queued behind an obsolete one. Scheduled runs never
+# cancel anything: they wait for a running build and are replaced if a newer
+# one queues up behind them.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 env:
   IMAGE: joewiz/hsg-project
@@ -24,6 +27,14 @@ jobs:
   build:
     name: Build and Test Images (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
+    # Timeouts are deliberately not armed yet. Data from a cold run (schedule,
+    # 2026-10-15): whole job ~4h06m on both platforms, of which the populate
+    # layer (deploying the xar-full data package) is ~3h24m, layer export and
+    # cache push ~25m, boot + tests ~3m. A warm run is a few minutes.
+    # Once a few successful runs confirm those numbers, arm something like
+    # timeout-minutes: 300 here (GitHub's own limit is 360), plus
+    # timeout-minutes: 15 on "Pull pushed image for testing".
+    # timeout-minutes: 300
     strategy:
       fail-fast: false
       matrix:
@@ -131,8 +142,14 @@ jobs:
 
       # BUILD
       # see https://github.com/felipecrs/docker-images/commit/f74a9532da6549d9562574eb1709ef50cedb640c
-      - name: Build image for testing on CI
-        # timeout-minutes: 240
+      # The image is built exactly once. On PRs it is loaded into the local
+      # daemon for testing. On main it is pushed untagged, by digest, and the
+      # tests run against that pushed digest: the tags are only created in the
+      # `merge` job once both platforms have passed. A second `build` for the
+      # push would redo the multi-hour populate layer whenever the cache missed.
+      - name: Build image
+        id: build
+        # timeout-minutes: 285  # cold build ~3h50m, see the job-level note
         env:
           BUILDKIT_PROGRESS: plain
         uses: docker/build-push-action@v7
@@ -141,14 +158,32 @@ jobs:
           platforms: ${{ matrix.platform }}
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.HSG_READ_TOKEN }}
-          load: true
-          tags: ${{ env.TEST_TAG }}
+          load: ${{ github.ref != 'refs/heads/main' }}
+          tags: ${{ github.ref != 'refs/heads/main' && env.TEST_TAG || '' }}
+          outputs: ${{ github.ref == 'refs/heads/main' && format('type=image,name={0},push-by-digest=true,name-canonical=true,push=true', env.IMAGE) || '' }}
           labels: |
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.created=${{ steps.meta.outputs.created }}
             org.opencontainers.image.version=${{ github.ref_name }}
+          # Attestations are attached to the pushed image only (the PR build is
+          # loaded into the local daemon, which cannot hold them). max records
+          # the Dockerfile, build args and base image digests.
+          provenance: ${{ github.ref == 'refs/heads/main' && 'mode=max' || 'false' }}
+          sbom: ${{ github.ref == 'refs/heads/main' }}
           cache-from: type=registry,ref=${{ env.IMAGE }}:${{ matrix.cache }}
           cache-to: type=registry,ref=${{ env.IMAGE }}:${{ matrix.cache }},mode=max
+
+      - name: Disk space after build
+        if: always()
+        run: |
+          df -h / /var/lib/docker
+          docker system df
+
+      - name: Pull pushed image for testing
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker pull ${{ env.IMAGE }}@${{ steps.build.outputs.digest }}
+          docker tag ${{ env.IMAGE }}@${{ steps.build.outputs.digest }} ${{ env.TEST_TAG }}
 
       # TEST
       - name: Start exist-ci containers
@@ -201,32 +236,11 @@ jobs:
       - name: Stop exist-ci container
         run: docker stop exist-ci
 
-      # PUSH
-      # Only untagged, by digest: the tags are created in the `merge` job
-      # once both platforms have passed.
-      - name: Push image by digest
-        if: github.ref == 'refs/heads/main'
-        id: push
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          platforms: ${{ matrix.platform }}
-          file: ./Dockerfile
-          secrets: |
-            GIT_AUTH_TOKEN=${{ secrets.HSG_READ_TOKEN }}
-          builder: ${{ steps.buildx.outputs.name }}
-          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
-          labels: |
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.created=${{ steps.meta.outputs.created }}
-            org.opencontainers.image.version=${{ github.ref_name }}
-          cache-from: type=registry,ref=${{ env.IMAGE }}:${{ matrix.cache }}
-
       - name: Export digest
         if: github.ref == 'refs/heads/main'
         run: |
           mkdir -p /tmp/digests
-          digest="${{ steps.push.outputs.digest }}"
+          digest="${{ steps.build.outputs.digest }}"
           touch "/tmp/digests/${digest#sha256:}"
 
       - name: Upload digest
@@ -244,6 +258,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      id-token: write      # sign with the workflow's OIDC identity
+      attestations: write  # store the attestation on GitHub
+      packages: write      # push the attestation to the registry
     steps:
       - name: Download digests
         uses: actions/download-artifact@v7
@@ -271,3 +290,19 @@ jobs:
 
       - name: Inspect image
         run: docker buildx imagetools inspect ${{ env.IMAGE }}:latest
+
+      # Sign a SLSA provenance statement for the published multi-arch index, so
+      # consumers can verify where the image came from:
+      #   gh attestation verify oci://joewiz/hsg-project:latest -R Jinntec/hsg-project
+      - name: Get index digest
+        id: index
+        run: |
+          digest=$(docker buildx imagetools inspect ${{ env.IMAGE }}:latest --format '{{json .Manifest}}' | jq -r .digest)
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: index.docker.io/${{ env.IMAGE }}
+          subject-digest: ${{ steps.index.outputs.digest }}
+          push-to-registry: true
