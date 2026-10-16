@@ -131,8 +131,13 @@ jobs:
 
       # BUILD
       # see https://github.com/felipecrs/docker-images/commit/f74a9532da6549d9562574eb1709ef50cedb640c
-      - name: Build image for testing on CI
-        # timeout-minutes: 240
+      # The image is built exactly once. On PRs it is loaded into the local
+      # daemon for testing. On main it is pushed untagged, by digest, and the
+      # tests run against that pushed digest: the tags are only created in the
+      # `merge` job once both platforms have passed. A second `build` for the
+      # push would redo the multi-hour populate layer whenever the cache missed.
+      - name: Build image
+        id: build
         env:
           BUILDKIT_PROGRESS: plain
         uses: docker/build-push-action@v7
@@ -141,14 +146,21 @@ jobs:
           platforms: ${{ matrix.platform }}
           secrets: |
             GIT_AUTH_TOKEN=${{ secrets.HSG_READ_TOKEN }}
-          load: true
-          tags: ${{ env.TEST_TAG }}
+          load: ${{ github.ref != 'refs/heads/main' }}
+          tags: ${{ github.ref != 'refs/heads/main' && env.TEST_TAG || '' }}
+          outputs: ${{ github.ref == 'refs/heads/main' && format('type=image,name={0},push-by-digest=true,name-canonical=true,push=true', env.IMAGE) || '' }}
           labels: |
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.created=${{ steps.meta.outputs.created }}
             org.opencontainers.image.version=${{ github.ref_name }}
           cache-from: type=registry,ref=${{ env.IMAGE }}:${{ matrix.cache }}
           cache-to: type=registry,ref=${{ env.IMAGE }}:${{ matrix.cache }},mode=max
+
+      - name: Pull pushed image for testing
+        if: github.ref == 'refs/heads/main'
+        run: |
+          docker pull ${{ env.IMAGE }}@${{ steps.build.outputs.digest }}
+          docker tag ${{ env.IMAGE }}@${{ steps.build.outputs.digest }} ${{ env.TEST_TAG }}
 
       # TEST
       - name: Start exist-ci containers
@@ -201,32 +213,11 @@ jobs:
       - name: Stop exist-ci container
         run: docker stop exist-ci
 
-      # PUSH
-      # Only untagged, by digest: the tags are created in the `merge` job
-      # once both platforms have passed.
-      - name: Push image by digest
-        if: github.ref == 'refs/heads/main'
-        id: push
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          platforms: ${{ matrix.platform }}
-          file: ./Dockerfile
-          secrets: |
-            GIT_AUTH_TOKEN=${{ secrets.HSG_READ_TOKEN }}
-          builder: ${{ steps.buildx.outputs.name }}
-          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
-          labels: |
-            org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.created=${{ steps.meta.outputs.created }}
-            org.opencontainers.image.version=${{ github.ref_name }}
-          cache-from: type=registry,ref=${{ env.IMAGE }}:${{ matrix.cache }}
-
       - name: Export digest
         if: github.ref == 'refs/heads/main'
         run: |
           mkdir -p /tmp/digests
-          digest="${{ steps.push.outputs.digest }}"
+          digest="${{ steps.build.outputs.digest }}"
           touch "/tmp/digests/${digest#sha256:}"
 
       - name: Upload digest
