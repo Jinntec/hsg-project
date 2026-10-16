@@ -1,0 +1,19 @@
+.github/workflows/docker_dev.yml
+  s_9c46027fa0ce3b::t_28bae3189dcfec 10-13,16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "be1b99690852d51837a35d89898a14b617213de3",
+  "prompts": {},
+  "sessions": {
+    "s_9c46027fa0ce3b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "20cf11af-33a2-4584-97cd-e27f50e15400",
+        "model": "claude-sonnet-5-5"
+      },
+      "human_author": "duncdrum <d.paterson@me.com>"
+    }
+  }
+}
