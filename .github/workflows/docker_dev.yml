@@ -7,10 +7,13 @@ on:
       - cron: "0 0/12 * * *"
   workflow_dispatch:
 
-# Superseded PR runs are cancelled, main/schedule runs are never cancelled
+# A newer push to the same ref cancels the run it supersedes (PRs and main),
+# so a 3+ hour build is not queued behind an obsolete one. Scheduled runs never
+# cancel anything: they wait for a running build and are replaced if a newer
+# one queues up behind them.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 env:
   IMAGE: joewiz/hsg-project
