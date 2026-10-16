@@ -27,6 +27,14 @@ jobs:
   build:
     name: Build and Test Images (${{ matrix.arch }})
     runs-on: ${{ matrix.runner }}
+    # Timeouts are deliberately not armed yet. Data from a cold run (schedule,
+    # 2026-10-15): whole job ~4h06m on both platforms, of which the populate
+    # layer (deploying the xar-full data package) is ~3h24m, layer export and
+    # cache push ~25m, boot + tests ~3m. A warm run is a few minutes.
+    # Once a few successful runs confirm those numbers, arm something like
+    # timeout-minutes: 300 here (GitHub's own limit is 360), plus
+    # timeout-minutes: 15 on "Pull pushed image for testing".
+    # timeout-minutes: 300
     strategy:
       fail-fast: false
       matrix:
@@ -141,6 +149,7 @@ jobs:
       # push would redo the multi-hour populate layer whenever the cache missed.
       - name: Build image
         id: build
+        # timeout-minutes: 285  # cold build ~3h50m, see the job-level note
         env:
           BUILDKIT_PROGRESS: plain
         uses: docker/build-push-action@v7
