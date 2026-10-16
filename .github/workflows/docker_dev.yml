@@ -156,6 +156,12 @@ jobs:
           cache-from: type=registry,ref=${{ env.IMAGE }}:${{ matrix.cache }}
           cache-to: type=registry,ref=${{ env.IMAGE }}:${{ matrix.cache }},mode=max
 
+      - name: Disk space after build
+        if: always()
+        run: |
+          df -h / /var/lib/docker
+          docker system df
+
       - name: Pull pushed image for testing
         if: github.ref == 'refs/heads/main'
         run: |
