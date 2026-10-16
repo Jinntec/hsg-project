@@ -258,6 +258,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      id-token: write      # sign with the workflow's OIDC identity
+      attestations: write  # store the attestation on GitHub
+      packages: write      # push the attestation to the registry
     steps:
       - name: Download digests
         uses: actions/download-artifact@v7
@@ -285,3 +290,19 @@ jobs:
 
       - name: Inspect image
         run: docker buildx imagetools inspect ${{ env.IMAGE }}:latest
+
+      # Sign a SLSA provenance statement for the published multi-arch index, so
+      # consumers can verify where the image came from:
+      #   gh attestation verify oci://joewiz/hsg-project:latest -R Jinntec/hsg-project
+      - name: Get index digest
+        id: index
+        run: |
+          digest=$(docker buildx imagetools inspect ${{ env.IMAGE }}:latest --format '{{json .Manifest}}' | jq -r .digest)
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4
+        with:
+          subject-name: index.docker.io/${{ env.IMAGE }}
+          subject-digest: ${{ steps.index.outputs.digest }}
+          push-to-registry: true
