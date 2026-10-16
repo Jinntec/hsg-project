@@ -165,6 +165,11 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.created=${{ steps.meta.outputs.created }}
             org.opencontainers.image.version=${{ github.ref_name }}
+          # Attestations are attached to the pushed image only (the PR build is
+          # loaded into the local daemon, which cannot hold them). max records
+          # the Dockerfile, build args and base image digests.
+          provenance: ${{ github.ref == 'refs/heads/main' && 'mode=max' || 'false' }}
+          sbom: ${{ github.ref == 'refs/heads/main' }}
           cache-from: type=registry,ref=${{ env.IMAGE }}:${{ matrix.cache }}
           cache-to: type=registry,ref=${{ env.IMAGE }}:${{ matrix.cache }},mode=max
 
