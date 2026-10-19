@@ -265,7 +265,7 @@ jobs:
       packages: write      # push the attestation to the registry
     steps:
       - name: Download digests
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: /tmp/digests
           pattern: digests-*
