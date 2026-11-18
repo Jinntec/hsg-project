@@ -1,0 +1,15 @@
+Dockerfile
+  h_ff0005bef58c9d 48,50,52-54,56-58
+  h_ff0005bef58c9d 7,49,51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bee25ce007290efab138c77b83ec4d6422bbdadc",
+  "prompts": {},
+  "humans": {
+    "h_ff0005bef58c9d": {
+      "author": "duncdrum <d.paterson@me.com>"
+    }
+  }
+}
