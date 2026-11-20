@@ -57,16 +57,16 @@ ADD --link ${HSG_GIT}/travels/releases/latest/download/travels.xar travels.xar
 ADD --link ${HSG_GIT}/visits/releases/latest/download/visits.xar visits.xar
 ADD --link ${HSG_GIT}/wwdai/releases/latest/download/wwdai.xar wwdai.xar
 
-# Private repos (need --secret id=GIT_AUTH_TOKEN at build time)
 # back to master or release artifacts after HistoryAtState/hsg-jinks#74 is merged
 ADD --link ${HSG_GIT}/hsg-jinks.git hsg-jinks/
 RUN cd hsg-jinks && ant xar \
     && cp build/*.xar /tmp/deps/015-hsg-jinks.xar
 
-# ant xar-full for when things are more stable
-ADD --link ${HSG_GIT}/hsg-jinks-data.git hsg-jinks-data/
-RUN cd hsg-jinks-data && ant xar-full \
-    && cp build/*.xar /tmp/deps/016-hsg-jinks-data.xar
+# The FRUS data, built from source: frus-tei's releases carry only the curated
+# volume subset, xar-full packages all volumes and their .last-modified entries
+ADD --link ${HSG_GIT}/frus-tei.git frus-tei/
+RUN cd frus-tei && ant xar-full \
+    && cp build/frus-tei.xar /tmp/deps/016-frus-tei.xar
 
 # pre-populate the database by launching it once
 FROM duncdrum/existdb:${EXISTDB_VERSION} AS populate
