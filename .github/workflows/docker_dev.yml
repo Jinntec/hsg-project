@@ -156,8 +156,12 @@ jobs:
         with:
           context: .
           platforms: ${{ matrix.platform }}
+          # schedule / manual: refresh "latest" XARs; push/PR keep the cache
+          build-args: |
+            CACHE_DATE=${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && github.run_id || 'static' }}
+          # raises GitHub API rate limits for gh release download (public repos)
           secrets: |
-            GIT_AUTH_TOKEN=${{ secrets.HSG_READ_TOKEN }}
+            GIT_AUTH_TOKEN=${{ secrets.GITHUB_TOKEN }}
           load: ${{ github.ref != 'refs/heads/main' }}
           tags: ${{ github.ref != 'refs/heads/main' && env.TEST_TAG || '' }}
           outputs: ${{ github.ref == 'refs/heads/main' && format('type=image,name={0},push-by-digest=true,name-canonical=true,push=true', env.IMAGE) || '' }}
