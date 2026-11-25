@@ -3,13 +3,13 @@
 ARG EXISTDB_VERSION=experimental
 ARG BUILDER_IMAGE=ghcr.io/eeditiones/builder:latest
 
-# Branch
-ARG VEC_REF=master
-
 # Dependency Versions
 ARG PUBLISHER_LIB_VERSION=6.1.2
 ARG JINKS_TEMPLATES_VERSION=1.4.2
 ARG CRYPTO_VERSION=7.0.0
+
+# Bust "latest" release downloads on schedule / workflow_dispatch (see workflow).
+ARG CACHE_DATE=static
 
 # xars are architecture-independent: build them once on the host platform
 # instead of repeating `ant xar` under QEMU for every target platform
@@ -20,31 +20,27 @@ ARG PUBLIC_REPO=https://exist-db.org/exist/apps/public-repo/public
 ARG HSG_GIT=https://github.com/HistoryAtState
 
 # Inherited
-ARG VEC_REF
 ARG PUBLISHER_LIB_VERSION
 ARG JINKS_TEMPLATES_VERSION
 ARG CRYPTO_VERSION
-
+ARG CACHE_DATE
 
 # Copy expath dependencies and ensure proper installation order
 WORKDIR /tmp/deps
 ADD --link ${PUBLIC_REPO}/expath-crypto-module-${CRYPTO_VERSION}.xar  001-crypto.xar
 ADD --link ${PUBLIC_REPO}/tei-publisher-lib-${PUBLISHER_LIB_VERSION}.xar  002-tp-lib.xar
 ADD --link ${PUBLIC_REPO}/jinks-templates-${JINKS_TEMPLATES_VERSION}.xar 003-ji-tmpl.xar
-
-
-# TODO determine the requirment for these project xars
-# ADD --link ${HSG_GIT}/release/releases/latest/download/release.xar release.xar
-# ADD --link ${HSG_GIT}/terms/releases/latest/download/terms.xar terms.xar
-# ADD --link ${HSG_GIT}/hsg-shell/releases/latest/download/hsg-shell.xar hsg-shell.xar
-# ADD --link ${HSG_GIT}/frus/releases/latest/download/frus.xar frus.xar
+# : "${CACHE_DATE}" binds the arg so schedule rebuilds re-fetch this and the
+# HSG "latest" ADDs below. GIT_AUTH_TOKEN raises GitHub API rate limits in CI.
+RUN --mount=type=secret,id=GIT_AUTH_TOKEN,env=GH_TOKEN \
+    : "${CACHE_DATE}" \
+    && gh release download -R HistoryAtState/hsg-jinks -p 'hsg-jinks-*.xar' -O 004-hsg-jinks.xar
 
 # Copy HSG Deps should be sorted in ascending order according to update frequency
 ADD --link ${HSG_GIT}/gsh/releases/latest/download/gsh.xar gsh.xar
 ADD --link ${HSG_GIT}/carousel/releases/latest/download/carousel.xar carousel.xar
 ADD --link ${HSG_GIT}/aws.xq/releases/latest/download/aws-xq.xar aws-xq.xar
 ADD --link ${HSG_GIT}/administrative-timeline/releases/latest/download/administrative-timeline.xar administrative-timeline.xar
-
 ADD --link ${HSG_GIT}/conferences/releases/latest/download/conferences.xar conferences.xar
 ADD --link ${HSG_GIT}/frus-history/releases/latest/download/frus-history.xar frus-history.xar
 ADD --link ${HSG_GIT}/hac/releases/latest/download/hac.xar hac.xar
@@ -56,17 +52,7 @@ ADD --link ${HSG_GIT}/tags/releases/latest/download/tags.xar tags.xar
 ADD --link ${HSG_GIT}/travels/releases/latest/download/travels.xar travels.xar
 ADD --link ${HSG_GIT}/visits/releases/latest/download/visits.xar visits.xar
 ADD --link ${HSG_GIT}/wwdai/releases/latest/download/wwdai.xar wwdai.xar
-
-# Private repos (need --secret id=GIT_AUTH_TOKEN at build time)
-# back to master or release artifacts after HistoryAtState/hsg-jinks#74 is merged
-ADD --link ${HSG_GIT}/hsg-jinks.git hsg-jinks/
-RUN cd hsg-jinks && ant xar \
-    && cp build/*.xar /tmp/deps/015-hsg-jinks.xar
-
-# ant xar-full for when things are more stable
-ADD --link ${HSG_GIT}/hsg-jinks-data.git hsg-jinks-data/
-RUN cd hsg-jinks-data && ant xar-full \
-    && cp build/*.xar /tmp/deps/016-hsg-jinks-data.xar
+ADD --link ${HSG_GIT}/frus-tei/releases/latest/download/frus-tei.xar frus-tei.xar
 
 # pre-populate the database by launching it once
 FROM duncdrum/existdb:${EXISTDB_VERSION} AS populate
